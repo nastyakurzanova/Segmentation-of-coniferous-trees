@@ -1,0 +1,135 @@
+* {
+  box-sizing: border-box;
+}
+
+.App {
+  min-height: 100vh;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1a3c2c 0%, #2d5a3b 50%, #1e4d2f 100%);
+  color: #f0f5e8;
+}
+
+.App > * {
+  margin: 6px 0;
+}
+
+/* ── Шапка ─────────────────────────────────────────────────────────────── */
+.header {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+  color: #f5f9e6;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 1px;
+}
+
+.header p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: #d4e6c3;
+}
+
+.code {
+  padding: 3px 7px;
+  color: #a8d5a2;
+  background-color: rgba(30, 40, 25, 0.7);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border: 1px solid rgba(168, 213, 162, 0.3);
+}
+
+/* ── Легенда классов ────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 6px 0 10px;
+  background: rgba(30, 50, 35, 0.6);
+  padding: 8px 16px;
+  border-radius: 40px;
+  backdrop-filter: blur(4px);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #e8f0dc;
+}
+
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Картинка + canvas ──────────────────────────────────────────────────── */
+.content {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(168, 213, 162, 0.3);
+  background: #2a4a35;
+}
+
+.content > img {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  max-height: 500px;
+  border-radius: 12px;
+}
+
+.content > canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Кнопки ─────────────────────────────────────────────────────────────── */
+.btn-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button {
+  text-decoration: none;
+  color: #f0f5e8;
+  background: linear-gradient(135deg, #3d6b4a 0%, #2d5a3b 100%);
+  border: 1px solid rgba(168, 213, 162, 0.5);
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(2px);
+}
+
+button:hover {
+  background: linear-gradient(135deg, #4d7e5a 0%, #3d6b4a 100%);
+  border-color: rgba(200, 230, 180, 0.8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(0px);
+}

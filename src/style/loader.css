@@ -1,0 +1,42 @@
+.wrapper {
+  background-color: rgba(30, 50, 35, 0.92);
+  backdrop-filter: blur(8px);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #a8d5a2;
+  gap: 12px;
+  border-radius: 16px;
+}
+
+.wrapper > .spinner {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #6aab7a 0%, #4a8a5a 100%);
+  animation: sk-rotateplane 1.2s infinite ease-in-out;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes sk-rotateplane {
+  0% {
+    transform: perspective(120px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(120px) rotateX(-180.1deg) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
+  }
+}
+
+.wrapper > p {
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
