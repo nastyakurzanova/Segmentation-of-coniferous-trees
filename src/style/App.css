@@ -133,3 +133,24 @@ button:hover {
 button:active {
   transform: translateY(0px);
 }
+
+
+.clip-badge {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 2px 8px;
+  background: #4CAF50;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: normal;
+}
+
+.clip-badge.loading {
+  background: #ff9800;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

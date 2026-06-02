@@ -7,6 +7,39 @@ const colors = new Colors();
 const numClass = labels.length;
 
 /**
+ * Вырезать сегментированную область из изображения
+ */
+export const cropSegment = (sourceImage, box) => {
+  return new Promise((resolve, reject) => {
+    const [x, y, w, h] = box;
+    
+    if (w <= 0 || h <= 0) {
+      reject(new Error('Invalid crop dimensions'));
+      return;
+    }
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    
+    try {
+      ctx.drawImage(sourceImage, x, y, w, h, 0, 0, w, h);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      resolve(imageData);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+// ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ
+const getClassNameRu = (className) => {
+  const map = { spruce: 'Сосна', pine: 'Пихта', fir: 'Ель' };
+  return map[className] || className;
+};
+
+/**
  * Detect and segment image
  */
 export const detectImage = async (
@@ -16,7 +49,8 @@ export const detectImage = async (
   topk,
   iouThreshold,
   scoreThreshold,
-  inputShape
+  inputShape,
+  onSegmentsExtracted
 ) => {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -35,6 +69,7 @@ export const detectImage = async (
   const { selected } = await session.nms.run({ detection: output0, config: config });
 
   const boxes = [];
+  const extractedSegments = [];
   let overlay = new Tensor("uint8", new Uint8Array(modelHeight * modelWidth * 4), [
     modelHeight, modelWidth, 4,
   ]);
@@ -69,6 +104,20 @@ export const detectImage = async (
       bounding: [x, y, w, h],
     });
 
+    // ВЫРЕЗАЕМ СЕГМЕНТ ДЛЯ CLIP
+    try {
+      const croppedImageData = await cropSegment(image, [x, y, w, h]);
+      extractedSegments.push({
+        className: labels[label],
+        classNameRu: getClassNameRu(labels[label]),
+        classColor: color,
+        bounding: [x, y, w, h],
+        croppedImageData: croppedImageData
+      });
+    } catch (err) {
+      console.warn('Failed to crop segment:', err);
+    }
+
     const mask = new Tensor(
       "float32",
       new Float32Array([...box, ...data.slice(4 + numClass)])
@@ -95,6 +144,11 @@ export const detectImage = async (
   ctx.putImageData(mask_img, 0, 0);
   renderBoxes(ctx, boxes);
   input.delete();
+  
+  // ВОЗВРАЩАЕМ ВЫРЕЗАННЫЕ СЕГМЕНТЫ
+  if (onSegmentsExtracted && extractedSegments.length > 0) {
+    onSegmentsExtracted(extractedSegments);
+  }
 };
 
 const preprocessing = (source, modelWidth, modelHeight, stride = 32) => {

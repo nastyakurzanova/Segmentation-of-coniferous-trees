@@ -2,32 +2,106 @@ import React, { useState, useRef } from "react";
 import cv from "@techstark/opencv-js";
 import { Tensor, InferenceSession } from "onnxruntime-web";
 import Loader from "./components/loader";
+import ClassCards from "./components/ClassCards";
+import CLIPResults from "./components/CLIPResults";
 import { detectImage } from "./utils/detect";
+import { loadCLIPModel, matchWithCards } from "./utils/clipMatcher";
 import "./style/App.css";
 
-// Цвета и названия классов для хвойных деревьев
 const CLASS_INFO = [
-  { name: "spruce",      color: "#2E7D32", label: "Ель" },
-  { name: "pine",        color: "#4CAF50", label: "Сосна" },
-  { name: "fir",         color: "#66BB6A", label: "Пихта" },
+  { name: "spruce", color: "#2E7D32", label: "Сосна" },
+  { name: "pine",   color: "#4CAF50", label: "Пихта" },
+  { name: "fir",    color: "#66BB6A", label: "Ель" },
 ];
 
-const App = () => {
-  const [session, setSession]   = useState(null);
-  const [loading, setLoading]   = useState({ text: "Загрузка OpenCV.js..." });
-  const [image, setImage]       = useState(null);
-  const inputImage              = useRef(null);
-  const imageRef                = useRef(null);
-  const canvasRef               = useRef(null);
+// Импортируем CLASS_CARDS из ClassCards
+let CLASS_CARDS = {};
 
-  const modelName       = "model.onnx";
+// Динамический импорт, чтобы избежать ошибок циклической зависимости
+const loadClassCards = async () => {
+  const module = await import("./components/ClassCards");
+  CLASS_CARDS = module.CLASS_CARDS;
+};
+loadClassCards();
+
+const App = () => {
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState({ text: "Загрузка OpenCV.js..." });
+  const [image, setImage] = useState(null);
+  const [clipMatches, setClipMatches] = useState([]);
+  const [isClipAnalyzing, setIsClipAnalyzing] = useState(false);
+  const [showClipResults, setShowClipResults] = useState(false);
+  const [clipModel, setClipModel] = useState(null);
+  
+  const inputImage = useRef(null);
+  const imageRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const modelName = "model.onnx";
   const modelInputShape = [1, 3, 640, 640];
-  const topk            = 100;
-  const iouThreshold    = 0.45;
-  const scoreThreshold  = 0.25;
+  const topk = 100;
+  const iouThreshold = 0.45;
+  const scoreThreshold = 0.25;
+
+  // Загрузка CLIP модели (заглушка)
+  React.useEffect(() => {
+    const initCLIP = async () => {
+      try {
+        const model = await loadCLIPModel();
+        setClipModel(model);
+        console.log("Анализатор готов");
+      } catch (error) {
+        console.error("Ошибка:", error);
+      }
+    };
+    initCLIP();
+  }, []);
+
+  // Обработка найденных сегментов
+  const handleSegmentsExtracted = async (segments) => {
+    console.log("Найдены сегменты:", segments);
+    
+    if (!segments || segments.length === 0) return;
+    
+    setIsClipAnalyzing(true);
+    setShowClipResults(true);
+    
+    try {
+      const allMatches = [];
+      
+      for (const segment of segments) {
+        const className = segment.className; // spruce/pine/fir
+        const cards = CLASS_CARDS[className]?.cards || [];
+        
+        console.log(`Поиск для класса ${className}, найдено ${cards.length} карточек`);
+        
+        if (cards.length > 0) {
+          // Передаём заглушку вместо реального croppedImageData
+          const matches = await matchWithCards(
+            null,  // пока не используем реальное изображение
+            cards, 
+            clipModel
+          );
+          
+          allMatches.push({
+            className: segment.className,
+            classNameRu: segment.classNameRu,
+            classColor: segment.classColor,
+            topMatches: matches
+          });
+        }
+      }
+      
+      setClipMatches(allMatches);
+    } catch (error) {
+      console.error("Ошибка анализа:", error);
+    } finally {
+      setIsClipAnalyzing(false);
+    }
+  };
 
   cv["onRuntimeInitialized"] = async () => {
-    setLoading({ text: "Загрузка модели..." });
+    setLoading({ text: "Загрузка модели YOLO..." });
     const yolov8 = await InferenceSession.create("./model.onnx");
 
     setLoading({ text: "Загрузка NMS..." });
@@ -60,10 +134,10 @@ const App = () => {
         <h1>🌲 Сегментация хвойных деревьев</h1>
         <p>
           YOLOv8-segment &nbsp;|&nbsp; <code className="code">{modelName}</code>
+          <span className="clip-badge"> 🔍 Анализ сходства активен</span>
         </p>
       </div>
 
-      {/* Легенда классов хвойных деревьев */}
       <div className="legend">
         {CLASS_INFO.map((cls) => (
           <div className="legend-item" key={cls.name}>
@@ -87,7 +161,8 @@ const App = () => {
               topk,
               iouThreshold,
               scoreThreshold,
-              modelInputShape
+              modelInputShape,
+              handleSegmentsExtracted
             );
           }}
         />
@@ -109,6 +184,8 @@ const App = () => {
             URL.revokeObjectURL(image);
             setImage(null);
           }
+          setShowClipResults(false);
+          setClipMatches([]);
           const url = URL.createObjectURL(e.target.files[0]);
           imageRef.current.src = url;
           setImage(url);
@@ -126,12 +203,24 @@ const App = () => {
               imageRef.current.src = "#";
               URL.revokeObjectURL(image);
               setImage(null);
+              setShowClipResults(false);
+              setClipMatches([]);
             }}
           >
             ✕ Закрыть
           </button>
         )}
       </div>
+
+      {showClipResults && (
+        <CLIPResults 
+          matches={clipMatches}
+          isLoading={isClipAnalyzing}
+          onClose={() => setShowClipResults(false)}
+        />
+      )}
+
+      <ClassCards />
     </div>
   );
 };
